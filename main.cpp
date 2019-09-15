@@ -2,7 +2,6 @@
 #include <cctype>
 #include <cstdlib>
 
-#define MASSIZE 1000
 #define STRSIZE 1000
 
 #define LESS -1
@@ -13,34 +12,44 @@
 #define EMPTY 0
 #define OK 1
 
+#define STRAIGHT 1
+#define REVERSED -1
+
 char Buffer[STRSIZE];
 int BufIdx = EMPTY;
 
-char Text[MASSIZE][STRSIZE];
+char *ptr;
+char *Text[STRSIZE];
+char *TextUnsorted[STRSIZE];
 int TextIdx = EMPTY;
 
 int BufEmpty(void);
 void PutBuf(const char c);
 char GetBuf(void);
 
-int GetLine(char *line);
+int GetLine(char *line, int *len);
 
 void GetText(void);
-void PrintText(void);
+void PrintText(char *Text[], int TextSize);
 
 void StrCpy(char *a, char *b);
-int StrCmp(char *a, char *b);
-void Swap(char *a, char *b);
+int StrLen(char *a);
+int StrCmpStraight(char *a, char *b);
+int StrCmpReversed(char *a, char *b);
+void Swap(char *Text[], int i, int j);
 
-void Sort(int l, int r);
+void Sort(int l, int r, int type);
 
 int main() {
     freopen("input.txt", "r", stdin);
     freopen("output.txt", "w", stdout);
     GetText();
-    PrintText();
-    Sort(0, TextIdx - 1);
-    PrintText();
+    PrintText(Text, TextIdx);
+    Sort(0, TextIdx - 1, STRAIGHT);
+    PrintText(Text, TextIdx);
+    Sort(0, TextIdx - 1, REVERSED);
+    PrintText(Text, TextIdx);
+    PrintText(TextUnsorted, TextIdx);
 }
 
 int BufEmpty() {
@@ -56,39 +65,45 @@ char GetBuf() {
     return Buffer[--BufIdx];
 }
 
-int GetLine(char *line) {
+int GetLine(char *line, int *len) {
     char c;
     while (isspace(c = getchar()) && c != '\n' && c != EOF);
     if (c == EOF)
         return ERROR;
     PutBuf(c);
     if (BufEmpty()) {
-        *line = '\0';
-        return EMPTY;
+        *line = '\0', *len = 0;
+        return OK;
     }
     while ((c = getchar()) != EOF && c != '\n' || !BufEmpty()) {
         while (!BufEmpty())
-            *line++ = GetBuf();
+            *line++ = GetBuf(), ++*len;
         if (c != EOF && c != '\n')
-            *line++ = c;
+            *line++ = c, ++*len;
         else
             break;
     }
-    *line = '\0';
+    *line = '\0', ++*len;
     return OK;
 }
 
 void GetText() {
-    int res = EMPTY;
-    while((res = GetLine(Text[TextIdx])) != ERROR) {
-        if (res == OK)
-            ++TextIdx;
+    int len = EMPTY;
+    char line[STRSIZE];
+    while(GetLine(line, &len) != ERROR) {
+        if (len > EMPTY) {
+            ptr = (char *)malloc(len);
+            len = 0;
+            StrCpy(line, ptr);
+            Text[TextIdx] = ptr;
+            TextUnsorted[TextIdx++] = ptr;
+        }
     }
 }
 
-void PrintText() {
-    for (int i = 0; i < TextIdx; ++i)
-        printf("%d: %s\n", i + 1, Text[i]);
+void PrintText(char *Text[], int TextSize) {
+    for (int i = 0; i < TextSize; ++i)
+        printf("%d: %s\n", i + 1, *(Text + i));
     printf("\n");
 }
 
@@ -97,7 +112,13 @@ void StrCpy(char *a, char *b) {
     *b = '\0';
 }
 
-int StrCmp (char *a, char *b) {
+int StrLen(char *a) {
+    char *a0 = a;
+    while (*a++);
+    return a - a0 - 1;
+}
+
+int StrCmpStraight(char *a, char *b) {
     while (*a == *b) {
         if (*a == '\0')
             return EQUAL;
@@ -106,26 +127,37 @@ int StrCmp (char *a, char *b) {
     return (*a < *b ? LESS : GREATER);
 }
 
-void Swap(char *a, char *b) {
-    char *temp = (char *)malloc(STRSIZE);
-    StrCpy(a, temp);
-    StrCpy(b, a);
-    StrCpy(temp, b);
-}
-
-void Sort(int l, int r) {
-    int i = l, j = r, m = i + (j - i) / 2;
-    while (i < j) {
-        while (StrCmp(Text[i], Text[m]) == LESS)
-            ++i;
-        while (StrCmp(Text[j], Text[m]) == GREATER)
-            --j;
-        if (i <= j)
-            Swap(Text[i], Text[j]);
+int StrCmpReversed(char *a, char *b) {
+    a += StrLen(a) - 1;
+    b += StrLen(b) - 1;
+    while (*a == *b) {
+        if (*a == '\0')
+            return EQUAL;
+        --a, --b;
     }
-    if (l < j)
-        Sort(l, j);
-    if (i > r)
-        Sort(i, r);
+    return (*a < *b ? LESS : GREATER);
 }
 
+void Swap(char *Text[], int i, int j) {
+    char *temp = Text[i];
+    Text[i] = Text[j];
+    Text[j] = temp;
+}
+
+void Sort(int l, int r, int type) {
+    int last = l;
+    if (l >= r)
+        return;
+    Swap(Text, l, l + (r - l) / 2);
+    for (int k = l + 1; k <= r; ++k)
+        if (type == STRAIGHT) {
+            if (StrCmpStraight(Text[k], Text[l]) == -1)
+                Swap(Text, ++last, k);
+        } else if (type == REVERSED) {
+            if (StrCmpReversed(Text[k], Text[l]) == -1)
+                Swap(Text, ++last, k);
+        }
+    Swap(Text, l, last);
+    Sort(l, last - 1, type);
+    Sort(last + 1, r, type);
+}
