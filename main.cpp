@@ -2,7 +2,7 @@
 #include <cctype>
 #include <cstdlib>
 
-#define STRSIZE 1000
+#define STRSIZE 8000
 
 #define LESS -1
 #define GREATER 1
@@ -34,6 +34,7 @@ void PrintText(char *Text[], int TextSize);
 
 void StrCpy(char *a, char *b);
 int StrLen(char *a);
+int CharCmp(char a, char b);
 int StrCmpStraight(char *a, char *b);
 int StrCmpReversed(char *a, char *b);
 void Swap(char *Text[], int i, int j);
@@ -44,11 +45,13 @@ int main() {
     freopen("input.txt", "r", stdin);
     freopen("output.txt", "w", stdout);
     GetText();
-    PrintText(Text, TextIdx);
     Sort(0, TextIdx - 1, STRAIGHT);
+    printf("\nStraight Sorted Text:\n");
     PrintText(Text, TextIdx);
     Sort(0, TextIdx - 1, REVERSED);
+    printf("\nReverse Sorted Text:\n");
     PrintText(Text, TextIdx);
+    printf("\nUnsorted Text:\n");
     PrintText(TextUnsorted, TextIdx);
 }
 
@@ -118,24 +121,32 @@ int StrLen(char *a) {
     return a - a0 - 1;
 }
 
+int CharCmp(char a, char b) {
+    if (a >= 'A' && a <= 'Z')
+        a += ('a' - 'A');
+    if (b >= 'A' && b <= 'Z')
+        b += ('a' - 'A');
+    return ( a > b ? 1 : a == b ? 0 : -1 );
+}
+
 int StrCmpStraight(char *a, char *b) {
-    while (*a == *b) {
+    while (CharCmp(*a, *b) == 0) {
         if (*a == '\0')
             return EQUAL;
         ++a, ++b;
     }
-    return (*a < *b ? LESS : GREATER);
+    return (CharCmp(*a, *b) == -1 ? LESS : GREATER);
 }
 
 int StrCmpReversed(char *a, char *b) {
     a += StrLen(a) - 1;
     b += StrLen(b) - 1;
-    while (*a == *b) {
+    while (CharCmp(*a, *b) == 0) {
         if (*a == '\0')
             return EQUAL;
         --a, --b;
     }
-    return (*a < *b ? LESS : GREATER);
+    return (CharCmp(*a, *b) == -1 ? LESS : GREATER);
 }
 
 void Swap(char *Text[], int i, int j) {
