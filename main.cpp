@@ -9,7 +9,7 @@
 const int MASSIZE = 1e5;
 
 enum { LESS, EQUAL, GREATER };
-enum { ERROR, EMPTY, OK };
+//enum { ERROR, EMPTY, OK };
 
 struct string {
     int len = 0;
